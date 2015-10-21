@@ -22,9 +22,6 @@ var httpOptions = {
     "path": "/fortum/tarkka/graafi.php"
 }
 
-// Where to store results
-var resultFile = "/tmp/tarkka_data.json";
-
 //
 // Globals
 //
@@ -35,6 +32,7 @@ today.setHours( 0 );
 today.setMinutes( 0 );
 today.setSeconds( 0 );
 today.setMilliseconds( 0 );
+var resultFile = null;
 
 //
 // Callback functions
@@ -104,9 +102,24 @@ var processResult = function( result ) {
         } );
 }
 
+// Help on usage
+var usage = function() {
+    console.log( "Usage: nodejs tarkka_fetch.js resultFile" );
+    console.log( "\nresultFile is the full filesystem path to store results to.\n" );
+    console.log( "This script fetches latest 'Tarkka' hourly pricess\nand store them locally once per day.\n" );
+    process.exit( 1 );
+}
+
 //
 // Main
 //
+
+var args = process.argv.splice( 2 );
+if( args.length == 0 ) {
+    usage();
+}
+
+resultFile = args[ 0 ];
 
 // Look for result file, if it exists and contains data for today, do nothing
 var valid = false;
