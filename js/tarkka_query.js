@@ -150,7 +150,15 @@ var doQuery = function( file, mode, modeSpecific, hour ) {
                 if( count >= values.length ) {
                     count = values.length;
                 }
-                resultValues = values.splice( 0, count );
+                resultValues = [];
+                var previousValue = -1;
+                for( var i = 0; i < values.length; i++ ) {
+                    if( i >= count && previousValue != values[ i ] ) {
+                        break;
+                    }
+                    previousValue = values[ i ];
+                    resultValues.push( values[ i ] );
+                }
                 break;
             case "over":
                 var limit = modeSpecific == null ? 6.00: parseFloat( modeSpecific );
