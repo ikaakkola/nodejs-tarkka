@@ -9,7 +9,7 @@
  * 
  * Usage:
  * 
- * nodejs tarkka_particleIo.js /path/to/tarkka_query.js /tmp/tarkka_data.json highest 5 apikey deviceId eventname 
+ * nodejs tarkka_particleIo.js /path/to/tarkka_query.js /tmp/tarkka_data.json highest 5 apikey eventname 
  * 
  * Copyright 2015, Ilkka Kaakkola <xenic@iki.fi>
  * 
@@ -18,16 +18,15 @@
 
 // Usage information
 var usage = function() {
-    console.log( "Usage: nodejs tarkka_particleIo.js queryJs file mode apikey deviceId eventname ttl" );
+    console.log( "Usage: nodejs tarkka_particleIo.js queryJs file mode apikey eventname ttl" );
     console.log( "\nqueryJs - full path to tarkka_query.js" );
     console.log( "file - the full path to read data from." );
     console.log( "mode - query mode, one of 'highest','lowest','under','over'" );
     console.log( "mode_specific - query mode specific, either number of highest or lowest entries, or 'limit' for over or udner" )
     console.log( "apikey - particle.io API key" );
-    console.log( "device - particle.io device ID" );
     console.log( "eventname - name of the publish event" );
     console
-        .log( "duration - duration of the event in seconds, this is sent as the 'data' for an event. Defaults to 3600 (1 hour). The amount of seconds that has passed for this hour is reduced from the value." );
+        .log( "ttl - duration of the event in seconds. Defaults to 3600 (1 hour). The amount of seconds that has passed for this hour is reduced from the value." );
     process.exit( 1 );
 }
 
@@ -36,7 +35,7 @@ var usage = function() {
 //
 
 /* Called after spark login */
-var loginCallback = function( spark, event, device, err, body ) {
+var loginCallback = function( spark, event, eventName, err, body ) {
     if( err !== null ) {
         console.error( "Login failed: " + err + "\n" );
         if( body != null ) {
@@ -45,19 +44,19 @@ var loginCallback = function( spark, event, device, err, body ) {
         process.exit( 1 );
     }
 
-    postEvent( spark, event, device );
+    postEvent( spark, event, eventName );
 }
 
 /* Post given event to spark */
-var postEvent = function( spark, event, device ) {
-    var publishEventPr = spark.publishEvent( device, event );
+var postEvent = function( spark, event, eventName ) {
+    var publishEventPr = spark.publishEvent( eventName, event );
 
     publishEventPr.then( function( data ) {
             if( data.ok ) {
-                console.log( "Event published succesfully." )
+                console.log( "Event published succesfully: " + JSON.stringify( data ) + "" )
             }
         }, function( err ) {
-            console.error( "Failed to publish event '" + JSON.stringify( event ) + "' to device '" + device + "': " + err )
+            console.error( "Failed to publish event '" + eventName + "' ('" + JSON.stringify( event ) + "')': " + err )
             process.exit( 1 );
         } );
 }
@@ -71,13 +70,12 @@ var queryJs = null;
 var file = null;
 var mode = null;
 var modeSpecific = null;
-var device = null;
 var apiKey = null;
 var eventName = null;
-var duration = 3600;
+var ttl = 3600;
 
 var args = process.argv.splice( 2 );
-if( args.length < 7 ) {
+if( args.length < 6 ) {
     usage();
 }
 
@@ -99,13 +97,10 @@ for( var i = 0; i < args.length; i++ ) {
             apiKey = args[ i ];
             break;
         case 5:
-            device = args[ i ];
-            break;
-        case 6:
             eventName = args[ i ];
             break;
-        case 7:
-            duration = parseInt( args[ i ] );
+        case 6:
+            ttl = parseInt( args[ i ] );
             break;
     }
 }
@@ -153,25 +148,20 @@ try {
         process.exit( 0 );
     }
 
-    var finalDuration = parseInt( duration ) - ( ( now.getMinutes() * 60 ) + now.getSeconds() );
+    var finalDuration = parseInt( ttl ) - ( ( now.getMinutes() * 60 ) + now.getSeconds() );
     if( finalDuration < 0 ) {
-        finalDuration = duration;
+        finalDuration = ttl;
     }
 
-    var event = {
-        "name": eventName,
-        "hour": data.values[ 0 ].hour,
-        "value": data.values[ 0 ].value,
-        "durationsec": finalDuration
-    }
-    console.log( JSON.stringify( event ) );
+    var event = "value=" + data.values[ 0 ].value + ",hour=" + data.values[ 0 ].hour + ",duration=" + finalDuration;
+    console.log( "Sending -> " + event );
 
     var spark = require( 'spark' );
 
     spark.login( {
             accessToken: apiKey
         }, function( err, body ) {
-            loginCallback( spark, event, device, err, body );
+            loginCallback( spark, event, eventName, err, body );
         } );
 } catch( e ) {
     console.error( "Internal error: " + e );
