@@ -55,17 +55,21 @@ try {
     }
 
     var hours = [];
+    var values = [];
     for( var i = 0; i < data.data.length; i++ ) {
         var val = data.data[ i ];
         if( val <= limit ) {
             hours.push( i );
+            values.push( val );
         }
     }
     var res = {
-        "value": limit,
+        "limit": limit,
         "unit": "c/kWh",
+        "values": values,
         "hours": hours
     }
+
     console.log( JSON.stringify( res ) );
 } catch( e ) {
     console.log( "Unable to read data from '" + resultFile + "': " + e );
