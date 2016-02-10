@@ -65,7 +65,7 @@ var loginCallback = function( spark, deviceId, functionName, params, err, body )
 }
 
 /* Call given remote function on device*/
-var postEvent = function( spark, device, functionName, params ) {
+var callRemoteFunction = function( spark, device, functionName, params ) {
 
     device.callFunction(functionName, params, function( err, data ) {
             if( err !== null && err !== "" ) {
